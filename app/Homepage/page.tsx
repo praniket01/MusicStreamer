@@ -7,7 +7,6 @@ export default function Home(){
     const [socket,setSocket] = useState<string | null>(null);
   
     const createServer = async() => {
-        debugger
         try {
             const response = await fetch('api/createServer', {method : 'POST'});
             const data = await response.json();

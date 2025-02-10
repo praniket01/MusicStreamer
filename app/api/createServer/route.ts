@@ -1,18 +1,23 @@
 import { NextRequest } from 'next/server';
 import { WebSocketServer } from 'ws';
 import * as http from 'http';
+import { randomUUID } from 'crypto';
 
 let server: http.Server | null = null;
 let wss: WebSocketServer | null = null;
 
 export async function POST(req: NextRequest) {
-    debugger
+
+
+    const roomID = randomUUID().slice(0, 8);
+    const wsUrl = `ws://localhost:8080/${roomID}`;
+
     if (server) {
-        return new Response(JSON.stringify({ message: 'Server already running', url: 'ws://localhost:8080' }), { status: 200 });
+        return Response.json({ message: 'Server already running', url: { wsUrl } });
     }
 
     server = http.createServer();
-    server.listen(8080, () => console.log("✅ WebSocket server running on ws://localhost:8080"));
+    server.listen(8080, () => console.log(`WebSocket server running on ${wsUrl}`));
     wss = new WebSocketServer({ server });
 
     wss.on('connection', (ws) => {
@@ -28,23 +33,22 @@ export async function POST(req: NextRequest) {
         ws.send("Welcome to the WebSocket Server!");
     });
 
-    return new Response(JSON.stringify({ message: "Server created", url: "ws://localhost:8080" }), { status: 201 });
+    return Response.json({ message: "Server created", url: { wsUrl } });
 }
 
-export async function DELETE(){
-    debugger
-    if(wss){
+export async function DELETE() {
+    if (wss) {
         wss.clients.forEach((client) => {
             client.close();
             wss = null;
 
         })
     }
-    if(server){
-        server.close(()=>{
+    if (server) {
+        server.close(() => {
             console.log("Websocket server stopped");
         })
     }
-    return Response.json({message : "Server stopped"});
+    return Response.json({ message: "Server stopped" });
 }
 
