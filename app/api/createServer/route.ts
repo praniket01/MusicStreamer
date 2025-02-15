@@ -1,54 +1,48 @@
 import { NextRequest } from 'next/server';
-import { WebSocketServer } from 'ws';
-import * as http from 'http';
-import { randomUUID } from 'crypto';
+import { WebSocketServer, WebSocket } from 'ws';
 
-let server: http.Server | null = null;
 let wss: WebSocketServer | null = null;
 
-export async function POST(req: NextRequest) {
+let allSockets: WebSocket[] = [];
 
+export async function POST() {
+    if (!wss) {
+        wss = new WebSocketServer({ port: 8080 });
+        wss.on('connection', (socket) => {
+            allSockets.push(socket);
 
-    const roomID = randomUUID().slice(0, 8);
-    const wsUrl = `ws://localhost:8080/${roomID}`;
+            socket.on("message", (message) => {
+                wss?.clients.forEach((s) => {
+                    if (s.readyState == s.OPEN) {
+                        s.send(message.toString());
+                    }
 
-    if (server) {
-        return Response.json({ message: 'Server already running', url: { wsUrl } });
+                })
+            })
+            socket.on("close", () => {
+                allSockets = allSockets.filter(s => s !== socket);
+            });
+
+        });
     }
 
-    server = http.createServer();
-    server.listen(8080, () => console.log(`WebSocket server running on ${wsUrl}`));
-    wss = new WebSocketServer({ server });
+    return Response.json({ "message": "Server created" });
 
-    wss.on('connection', (ws) => {
-        ws.on('message', (data) => {
-            console.log("Received:", data.toString());
-            wss?.clients.forEach(client => {
-                if (client.readyState === ws.OPEN) {
-                    client.send(`Echo: ${data}`);
-                }
-            });
-        });
-
-        ws.send("Welcome to the WebSocket Server!");
-    });
-
-    return Response.json({ message: "Server created", url: { wsUrl } });
 }
 
 export async function DELETE() {
+    debugger
     if (wss) {
         wss.clients.forEach((client) => {
             client.close();
-            wss = null;
+            
 
         })
+        wss.close();
+        wss = null;
+        allSockets = [];
     }
-    if (server) {
-        server.close(() => {
-            console.log("Websocket server stopped");
-        })
-    }
+
     return Response.json({ message: "Server stopped" });
 }
 

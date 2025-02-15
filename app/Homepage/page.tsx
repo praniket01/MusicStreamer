@@ -1,4 +1,4 @@
-import axios from "axios";
+"use client"
 import { useState } from "react";
 
 export default function Home(){
@@ -8,27 +8,21 @@ export default function Home(){
   
     const createServer = async() => {
         try {
+            debugger
             const response = await fetch('api/createServer', {method : 'POST'});
             const data = await response.json();
-            
-            if(response.status == 201){
-                const url: string = data.url;
-                setServerUrl(data.url);
-                const ws: any = new WebSocket(url);
-                setSocket(ws);
-            }
+         
 
         } catch (err) {
             console.error(err);
         }
     }
     const stopServer = async () => {
-        debugger
         try {
+            debugger
             const response = await fetch('/api/createServer', {method : "DELETE"});
             const data = await response.json();
             console.log(data.message);
-            setServerUrl(null);
         } catch (err) {
             console.error(err);
         }
