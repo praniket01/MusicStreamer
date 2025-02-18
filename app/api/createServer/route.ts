@@ -1,32 +1,60 @@
-import { NextRequest } from 'next/server';
 import { WebSocketServer, WebSocket } from 'ws';
+import { randomUUID } from "crypto";
+import { NextRequest, NextResponse } from 'next/server';
+
 
 let wss: WebSocketServer | null = null;
 
-let allSockets: WebSocket[] = [];
+interface User {
+    socket: WebSocket,
+    room: string,
+}
 
-export async function POST() {
-    if (!wss) {
-        wss = new WebSocketServer({ port: 8080 });
-        wss.on('connection', (socket) => {
-            allSockets.push(socket);
+let allSockets: User[] = [];
 
-            socket.on("message", (message) => {
-                wss?.clients.forEach((s) => {
-                    if (s.readyState == s.OPEN) {
-                        s.send(message.toString());
-                    }
+export async function POST(req: NextRequest, res: NextResponse) {
 
-                })
-            })
-            socket.on("close", () => {
-                allSockets = allSockets.filter(s => s !== socket);
-            });
-
-        });
+    if (wss) {
+        return NextResponse.json({ "message": "Server is already running" });
     }
 
-    return Response.json({ "message": "Server created" });
+    const serverCreatedroomID: string = randomUUID().slice(0, 8);
+
+    wss = new WebSocketServer({ port: 8000 });
+    console.log(`Websocket server created at ${serverCreatedroomID}`);
+
+    wss.on('connection', (socket) => {
+        debugger
+        socket.on("message", (message) => {
+            try {
+                const parsedMessage = JSON.parse(message.toString());
+                if (parsedMessage.type == "join") {
+                    if (parsedMessage.payload.roomId === serverCreatedroomID) {
+                        allSockets.push({ socket, room: serverCreatedroomID });
+                        socket.send(JSON.stringify({ type: "info", message: `Joined room ${serverCreatedroomID}` }));
+                        console.log(`Client joined room: ${serverCreatedroomID}`);
+                    } else {
+                        socket.send(JSON.stringify({ type: "error", message: "Invalid Room ID" }));
+                        socket.close();
+                    }
+
+        
+                }
+
+            } catch (error) {
+                console.log("Invalid message format",error);
+                socket.send(JSON.stringify({ type: "error", message: "Invalid message format" }));
+            }
+
+        })
+        
+        // socket.on("close", () => {
+        //     allSockets = allSockets.filter(user => user.socket !== socket);
+        //     console.log("Client disconnected");
+        // });
+    });
+
+    return NextResponse.json({ message: "Server created", serverCreatedroomID }, { status: 201 });
 
 }
 
@@ -35,7 +63,7 @@ export async function DELETE() {
     if (wss) {
         wss.clients.forEach((client) => {
             client.close();
-            
+
 
         })
         wss.close();
