@@ -33,6 +33,8 @@ export async function POST(req: NextRequest, res: NextResponse) {
                         allSockets.push({ socket, room: serverCreatedroomID });
                         socket.send(JSON.stringify({ type: "info", message: `Joined room ${serverCreatedroomID}` }));
                         console.log(`Client joined room: ${serverCreatedroomID}`);
+
+                        return NextResponse.json({ message: "Client Joined", serverCreatedroomID }, { status: 201 });
                     } else {
                         socket.send(JSON.stringify({ type: "error", message: "Invalid Room ID" }));
                         socket.close();
