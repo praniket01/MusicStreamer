@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link";
-import { redirect, useRouter } from "next/navigation";
+import {  useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function Home() {
@@ -19,7 +19,7 @@ export default function Home() {
                 setRoomId(data.serverCreatedroomID);
                 alert(`Server created. Room ID: ${data.serverCreatedroomID}`);
                 localStorage.setItem("roomId",data.serverCreatedroomID);
-                router.push("../stream");
+                router.push("../Stream");
             }
 
         } catch (err) {
