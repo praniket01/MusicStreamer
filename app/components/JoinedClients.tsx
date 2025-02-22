@@ -7,6 +7,7 @@ const JoinedClients = () => {
 
     useEffect(() => {
         // Check if WebSocket is already open
+        debugger
         if (!ws.current) {
             ws.current = new WebSocket("ws://localhost:8000");
 
