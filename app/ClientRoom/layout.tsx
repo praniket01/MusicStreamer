@@ -1,3 +1,5 @@
+
+
 import JoinedClients from "../components/JoinedClients";
 
 export default function ClientLayout({children}: {children: React.ReactNode}){
@@ -5,7 +7,11 @@ export default function ClientLayout({children}: {children: React.ReactNode}){
     <div className="flex">
         {children}
         <div className="flex-1 p-4">
-            <JoinedClients />
+ 
+                <JoinedClients />
+            
+            
+                
         </div>
     </div>
     )

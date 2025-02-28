@@ -32,9 +32,11 @@ export async function POST(req: NextRequest, res: NextResponse) {
                 if (parsedMessage.type == "join") {
                     if (parsedMessage.payload.roomId === serverCreatedroomID) {
                         allSockets.push({ socket, room: serverCreatedroomID, name: parsedMessage.payload.name });
-                        socket.send(JSON.stringify({ type: "info", message: `Joined room ${serverCreatedroomID}`, flag: true }));
-                        console.log(`Client joined room: ${serverCreatedroomID}`);
+                        socket.send(JSON.stringify({ type: "info", message: `Joined room ${serverCreatedroomID}`, flag: true, allSockets }));
+
                         broadcastClients(serverCreatedroomID);
+                        console.log(`Client joined room: ${serverCreatedroomID}`);
+                        // broadcastClients(serverCreatedroomID);
                         return NextResponse.json({ message: "Client Joined", serverCreatedroomID }, { status: 201 });
                     } else {
                         socket.send(JSON.stringify({ type: "error", message: "Invalid Room ID" }));
@@ -60,22 +62,21 @@ export async function POST(req: NextRequest, res: NextResponse) {
 
 }
 
-const broadcastClients = (serverCreatedroomID: string) => {
-    debugger
-    const clientsInRoom = allSockets.filter(x => {x.room === serverCreatedroomID}).map(x => x.name);
-    allSockets.forEach((user)=>{ 
-        if(user.room = serverCreatedroomID){
-            user.socket.send(
-                JSON.stringify({
-                    type: "updateclients",
-                    clients: clientsInRoom,
-                })
-            )
-        }
-        
-    })
 
-}
+function broadcastClients(serverCreatedroomID: string) {
+    const clientsInRoom = allSockets.filter(x => x.room === serverCreatedroomID);
+    const clientNames = clientsInRoom.map(x => x.name);
+
+    clientsInRoom.forEach(({ socket }) => {
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: "updateclients",
+                clients: clientNames,
+            }));
+        }
+    });
+};
+
 export async function DELETE() {
     debugger
     if (wss) {
@@ -88,7 +89,7 @@ export async function DELETE() {
         wss = null;
         allSockets = [];
 
-        Storage : localStorage.clear();
+        Storage: localStorage.clear();
     }
 
     return Response.json({ message: "Server stopped" });

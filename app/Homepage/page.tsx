@@ -12,7 +12,7 @@ export default function Home() {
     const createServer = async () => {
         try {
 
-            debugger
+            
             const response = await fetch('api/createServer', { method: 'POST' });
             const data = await response.json();
             if (response.status == 201) {

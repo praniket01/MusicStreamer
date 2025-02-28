@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import ClientRoom from "../ClientRoom/page";
+import { useClientsStore } from "../context/useClientStore";
 
 const joinroom = () => {
 
@@ -9,6 +10,7 @@ const joinroom = () => {
     const [name, setName] = useState<string>(() => localStorage.getItem("name") || "");
     const [error, setError] = useState<string>("");
     const [renderer, setRenderer] = useState<boolean>(!!localStorage.getItem("renderer"));
+    const setClients = useClientsStore((state) => state.setClients);
 
     useEffect(() => {
         localStorage.setItem("roomId", roomId);
@@ -51,7 +53,11 @@ const joinroom = () => {
                 if (data.type == "error") {
                     setError(data.message);
                 }
-                
+                if (data.type == "updateclients") {
+                    setClients([...data.clients]);
+
+                }
+
             } catch (error) {
                 console.log(error);
             }
