@@ -1,6 +1,9 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from 'next/server';
+import axios from 'axios';
+import { error } from 'console';
+import ytdl from 'ytdl-core';
 
 
 let wss: WebSocketServer | null = null;
@@ -25,7 +28,6 @@ export async function POST(req: NextRequest, res: NextResponse) {
     console.log(`Websocket server created at ${serverCreatedroomID}`);
 
     wss.on('connection', (socket) => {
-        debugger
         socket.on("message", (message) => {
             try {
                 const parsedMessage = JSON.parse(message.toString());
@@ -45,6 +47,10 @@ export async function POST(req: NextRequest, res: NextResponse) {
 
 
                 }
+                if (parsedMessage.type == "play") {
+                    const { videoId, roomId } = parsedMessage;
+                    streamAudio(videoId, roomId);
+                }
 
             } catch (error) {
                 console.log("Invalid message format", error);
@@ -62,6 +68,37 @@ export async function POST(req: NextRequest, res: NextResponse) {
 
 }
 
+async function streamAudio(videoId: string, roomId: string) {
+    debugger
+    try {
+        const res = axios.post('https://localhost:3000/app/Stream/api/play', { videoId });
+        //@ts-ignore
+        const audiourl = await res.data.audioUrl;
+        if (!audiourl) {
+            return NextResponse.json({ error: "Error fetching Audio URL" });
+
+        }
+        const audioStream = ytdl(audiourl, { filter: "audioonly", quality: "highestaudio" });
+
+        audioStream.on("data", (chunks) => {
+            const clientsInRoom = allSockets.filter(x => x.room === roomId);
+            clientsInRoom.forEach(({ socket }) => {
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.send(chunks);
+                }
+            });
+            audioStream.on("end", () => {
+                console.log("Streaming finished");
+            });
+
+
+        })
+
+
+    } catch (error) {
+        NextResponse.json({ error: "catch error" });
+    }
+}
 
 function broadcastClients(serverCreatedroomID: string) {
     const clientsInRoom = allSockets.filter(x => x.room === serverCreatedroomID);
@@ -78,7 +115,6 @@ function broadcastClients(serverCreatedroomID: string) {
 };
 
 export async function DELETE() {
-    debugger
     if (wss) {
         wss.clients.forEach((client) => {
             client.close();
